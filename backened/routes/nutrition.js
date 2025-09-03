@@ -4,6 +4,27 @@ import asyncHandler from "../middleware/asyncHandler.js";
 import Nutrition from "../models/Nutrition.js";
 
 const router = express.Router();
+/**
+ * @desc   Get single nutrition log by ID
+ * @route  GET /api/nutrition/:id
+ * @access Private
+ */
+router.get(
+  "/:id",
+  verifyToken,
+  asyncHandler(async (req, res) => {
+    const log = await Nutrition.findOne({
+      _id: req.params.id,
+      user: req.user.id,
+    });
+
+    if (!log) {
+      return res.status(404).json({ message: "Nutrition log not found" });
+    }
+
+    res.json(log);
+  })
+);
 
 /**
  * @desc   Get nutrition logs (optionally filter by date)
@@ -11,9 +32,7 @@ const router = express.Router();
  * @access Private
  */
 
-router.get("/test", (req, res) => {
-  res.json({ message: "✅ Nutrition route working!" });
-});
+
 
 router.get(
   "/",

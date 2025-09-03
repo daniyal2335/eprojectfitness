@@ -1,17 +1,25 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { api } from "../api/client";
 import { Card, CardContent } from "./ui/Card";
 import { Input } from "./ui/Input";
 import { Button } from "./ui/Button";
 import { Select } from "./ui/Select";
 
-export default function NutritionForm({ onSaved }) {
+export default function NutritionForm({ initial = null, onSaved }) {
   const [mealType, setMealType] = useState("breakfast");
   const [items, setItems] = useState([
     { name: "", qty: 1, unit: "serving", calories: 0, protein: 0, carbs: 0, fats: 0 },
   ]);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(""); // ✅ success state add
+  const [success, setSuccess] = useState("");
+
+  // 🔹 Pre-fill data if editing
+  useEffect(() => {
+    if (initial) {
+      setMealType(initial.mealType || "breakfast");
+      setItems(initial.items || []);
+    }
+  }, [initial]);
 
   const setItem = (i, k, v) =>
     setItems((s) => {
@@ -40,24 +48,36 @@ export default function NutritionForm({ onSaved }) {
         return;
       }
       setError("");
-      setSuccess(""); // ✅ purana success clear
+      setSuccess("");
 
       const token = localStorage.getItem("token");
+      const payload = { mealType, items };
 
-      const data = await api("/api/nutrition", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ mealType, items }),
-      });
-
-      console.log("Response data:", data);
+      if (initial && initial._id) {
+        // 🔹 Update existing meal
+        await api(`/api/nutrition/${initial._id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        });
+        setSuccess("✅ Meal updated successfully!");
+      } else {
+        // 🔹 Add new meal
+        await api("/api/nutrition", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        });
+        setSuccess("✅ Meal added successfully!");
+      }
 
       onSaved?.();
-
-      setSuccess("✅ Meal saved successfully!"); // ✅ success state set
     } catch (err) {
       console.error(err);
       setError(err.message || "Error saving meal. Please try again.");
@@ -66,7 +86,9 @@ export default function NutritionForm({ onSaved }) {
 
   return (
     <form onSubmit={save} className="space-y-6 max-w-5xl mx-auto p-4">
-      <h2 className="text-2xl font-bold text-gray-800">Log Your Meal</h2>
+      <h2 className="text-2xl font-bold text-gray-800">
+        {initial ? "Edit Meal" : "Log Your Meal"}
+      </h2>
 
       {/* Success/Error Messages */}
       {success && <p className="text-green-600 font-semibold">{success}</p>}
@@ -117,7 +139,7 @@ export default function NutritionForm({ onSaved }) {
         </Button>
 
         <Button type="submit" className="bg-green-600 hover:bg-green-700 text-white">
-          Save Meal
+          {initial ? "Update Meal" : "Save Meal"}
         </Button>
       </div>
     </form>

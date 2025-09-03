@@ -5,30 +5,46 @@ import Workout from '../models/Workout.js';
 
 const router = express.Router();
 
+// ✅ Get all workouts (with filters)
 router.get('/', verifyToken, asyncHandler(async (req,res)=>{
   const { q, category, tag } = req.query;
   const filter = { user: req.user.id };
   if(category) filter.category = category;
   if(tag) filter.tags = tag;
   if(q) filter.$text = { $search: q };
+
   const list = await Workout.find(filter).sort({ performedAt: -1 });
   res.json(list);
 }));
 
+// ✅ Get single workout by ID
+router.get('/:id', verifyToken, asyncHandler(async (req,res)=>{
+  const workout = await Workout.findOne({ _id: req.params.id, user: req.user.id });
+  if(!workout) return res.status(404).json({ message: 'Workout not found' });
+  res.json(workout);
+}));
+
+// ✅ Create new workout
 router.post('/', verifyToken, asyncHandler(async (req,res)=>{
   const created = await Workout.create({ ...req.body, user: req.user.id });
   res.status(201).json(created);
 }));
 
+// ✅ Update workout
 router.put('/:id', verifyToken, asyncHandler(async (req,res)=>{
-  const updated = await Workout.findOneAndUpdate({ _id:req.params.id, user:req.user.id }, req.body, { new:true });
-  if(!updated) return res.status(404).json({message:'Not found'});
+  const updated = await Workout.findOneAndUpdate(
+    { _id:req.params.id, user:req.user.id },
+    req.body,
+    { new:true }
+  );
+  if(!updated) return res.status(404).json({ message:'Not found' });
   res.json(updated);
 }));
 
+// ✅ Delete workout
 router.delete('/:id', verifyToken, asyncHandler(async (req,res)=>{
   const del = await Workout.findOneAndDelete({ _id:req.params.id, user:req.user.id });
-  if(!del) return res.status(404).json({message:'Not found'});
+  if(!del) return res.status(404).json({ message:'Not found' });
   res.json({ message:'Deleted' });
 }));
 

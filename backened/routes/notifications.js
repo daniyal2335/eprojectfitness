@@ -5,14 +5,34 @@ import Notification from '../models/Notification.js';
 
 const router = express.Router();
 
-router.get('/', verifyToken, asyncHandler(async (req,res)=>{
-  const list = await Notification.find({ user:req.user.id }).sort({ createdAt:-1 });
+// ✅ Get notifications
+router.get('/', verifyToken, asyncHandler(async (req, res) => {
+  const list = await Notification.find({ user: req.user.id }).sort({ createdAt: -1 });
   res.json(list);
 }));
 
-router.post('/mark-read/:id', verifyToken, asyncHandler(async (req,res)=>{
-  await Notification.findOneAndUpdate({ _id:req.params.id, user:req.user.id }, { read:true });
-  res.json({message:'ok'});
+// ✅ Mark as read
+router.post('/mark-read/:id', verifyToken, asyncHandler(async (req, res) => {
+  await Notification.findOneAndUpdate(
+    { _id: req.params.id, user: req.user.id },
+    { read: true }
+  );
+  res.json({ message: 'ok' });
+}));
+
+// ✅ Example: Create new notification + emit socket
+router.post('/', verifyToken, asyncHandler(async (req, res) => {
+  const notif = await Notification.create({
+    user: req.user.id,
+    message: req.body.message,
+    read: false
+  });
+
+  // 🔥 Emit realtime notification
+  const io = req.app.get("io");
+  io.to(req.user.id.toString()).emit("notification", notif);
+
+  res.status(201).json(notif);
 }));
 
 export default router;

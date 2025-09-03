@@ -6,8 +6,8 @@ import { motion, AnimatePresence } from "framer-motion";
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [message, setMessage] = useState(null); // ✅ new state
-  const [status, setStatus] = useState(""); // success | error
+  const [message, setMessage] = useState(null); 
+  const [status, setStatus] = useState(""); 
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
@@ -17,7 +17,7 @@ export default function Login() {
       localStorage.setItem("token", res.data.token);
       setStatus("success");
       setMessage(res.data.message || "Login successful ✅");
-      setTimeout(() => navigate("/dashboard"), 1500); // delay then redirect
+      setTimeout(() => navigate("/dashboard"), 1500); 
     } catch (err) {
       setStatus("error");
       setMessage(err.response?.data?.message || "Login failed ❌");
