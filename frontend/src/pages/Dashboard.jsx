@@ -6,6 +6,7 @@ import { WeeklyWorkoutsChart, WeightProgressChart } from "../components/Charts";
 import WorkoutForm from "../components/WorkoutForm";
 import NutritionForm from "../components/NutritionForm";
 import { Card, CardContent } from "../components/ui/Card";
+import toast from "react-hot-toast";
 
 export default function DashboardHome() {
   const token = localStorage.getItem("token");
@@ -29,6 +30,7 @@ export default function DashboardHome() {
   const [results, setResults] = useState({ workouts: [], meals: [], users: [] });
   const [searching, setSearching] = useState(false);
 
+  // 🔄 Dashboard load
   const load = async () => {
     try {
       setLoading(true);
@@ -44,8 +46,11 @@ export default function DashboardHome() {
       setWeekly(wk);
       setWeights(wt);
       setRecent(rc);
+
+      toast.success("Dashboard updated ✅");
     } catch (e) {
       console.error(e);
+      toast.error("Failed to load dashboard ❌");
     } finally {
       setLoading(false);
     }
@@ -69,6 +74,7 @@ export default function DashboardHome() {
       setResults(res);
     } catch (err) {
       console.error("Search failed", err);
+      toast.error("Search failed. Please try again.");
     } finally {
       setSearching(false);
     }
@@ -232,14 +238,24 @@ export default function DashboardHome() {
         <Card className="shadow-lg">
           <CardContent>
             <h3 className="text-lg font-semibold mb-4">Add Workout</h3>
-            <WorkoutForm onSaved={load} />
+            <WorkoutForm
+              onSaved={() => {
+                load();
+                toast.success("Workout added 🎉");
+              }}
+            />
           </CardContent>
         </Card>
 
         <Card className="shadow-lg">
           <CardContent>
             <h3 className="text-lg font-semibold mb-4">Log Nutrition</h3>
-            <NutritionForm onSaved={load} />
+            <NutritionForm
+              onSaved={() => {
+                load();
+                toast.success("Meal logged 🍎");
+              }}
+            />
           </CardContent>
         </Card>
       </div>

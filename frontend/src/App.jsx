@@ -1,4 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useEffect } from "react";
+import socket from "./socket"; 
+import toast, { Toaster } from "react-hot-toast";
+
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
@@ -8,14 +12,22 @@ import Layout from "./components/layouts/DashboardLayout.jsx";
 import NutritionForm from "./components/NutritionForm.jsx";
 import EditWorkout from "./components/EditWorkout.jsx";
 import NutritionAnalytics from "./components/NutritionAnalytics";
-
-// ✅ Import charts from Charts.jsx
 import { WeightProgressChart, WeeklyWorkoutsChart } from "./components/Charts.jsx";
 import ProgressForm from "./components/ProgressForm.jsx";
 import WorkoutDashboard from "./components/WorkoutDashboard.jsx";
 import NutritionDashboard from "./components/NutritionDashboard.jsx";
 
 function App() {
+   useEffect(() => {
+    socket.on("newNotification", (notification) => {
+      toast.success(notification.message);
+    });
+
+    return () => {
+      socket.off("newNotification");
+    };
+  }, []);
+
   return (
     <BrowserRouter>
       <Routes>
@@ -24,7 +36,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        {/* Protected Layout with Navbar + Sidebar */}
+        {/* Protected Layout */}
         <Route element={<Layout />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/profile" element={<Profile />} />
@@ -35,9 +47,11 @@ function App() {
           <Route path="/workouts/:id" element={<EditWorkout />} />
           <Route path="/nutrition-analytics" element={<NutritionAnalytics />} />
           <Route path="/nutrition-dashboard" element={<NutritionDashboard />} />
-
         </Route>
       </Routes>
+
+      {/* ✅ Toaster global placement */}
+      <Toaster position="top-right" reverseOrder={false} />
     </BrowserRouter>
   );
 }

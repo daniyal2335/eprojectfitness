@@ -5,22 +5,19 @@ import Notification from '../models/Notification.js';
 
 const router = express.Router();
 
-// ✅ Get notifications
+// Get notifications
 router.get('/', verifyToken, asyncHandler(async (req, res) => {
   const list = await Notification.find({ user: req.user.id }).sort({ createdAt: -1 });
   res.json(list);
 }));
 
-// ✅ Mark as read
+// Mark as read
 router.post('/mark-read/:id', verifyToken, asyncHandler(async (req, res) => {
-  await Notification.findOneAndUpdate(
-    { _id: req.params.id, user: req.user.id },
-    { read: true }
-  );
+  await Notification.findOneAndUpdate({ _id: req.params.id, user: req.user.id }, { read: true });
   res.json({ message: 'ok' });
 }));
 
-// ✅ Example: Create new notification + emit socket
+// Create notification + emit via socket
 router.post('/', verifyToken, asyncHandler(async (req, res) => {
   const notif = await Notification.create({
     user: req.user.id,
@@ -28,7 +25,6 @@ router.post('/', verifyToken, asyncHandler(async (req, res) => {
     read: false
   });
 
-  // 🔥 Emit realtime notification
   const io = req.app.get("io");
   io.to(req.user.id.toString()).emit("notification", notif);
 

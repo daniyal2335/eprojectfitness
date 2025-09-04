@@ -1,21 +1,20 @@
+import React from "react";
 import ProfileImage from "../ProfileImage";
 import NotificationBell from "../NotificationBell";
 import { Link, useNavigate } from "react-router-dom";
-import { LogOut, User } from "lucide-react"; // ✅ Icons import
+import { LogOut, User } from "lucide-react";
 
 export default function Navbar({ user, exportCSV }) {
-  console.log("Navbar user:", user);
   const navigate = useNavigate();
 
   const handleLogout = () => {
     localStorage.removeItem("user");
-    localStorage.removeItem("token"); // agar token bhi store karte ho
+    localStorage.removeItem("token");
     navigate("/login");
   };
 
   return (
     <header className="bg-white rounded-2xl shadow p-4 flex items-center justify-between">
-      {/* Left Side: Welcome Text */}
       <div>
         <h2 className="text-xl font-bold">
           Welcome, {user?.name || user?.username || "Guest"} 👋
@@ -23,9 +22,7 @@ export default function Navbar({ user, exportCSV }) {
         <p className="text-gray-500">Your personalized fitness dashboard</p>
       </div>
 
-      {/* Right Side */}
       <div className="flex items-center gap-4">
-        {/* Export Buttons */}
         <button
           onClick={() => exportCSV("workouts")}
           className="text-sm px-3 py-1 rounded bg-gray-100 hover:bg-gray-200 transition"
@@ -39,11 +36,9 @@ export default function Navbar({ user, exportCSV }) {
           Export Nutrition CSV
         </button>
 
-        {/* Notification */}
-        <NotificationBell />
-        {console.log("🔔 Rendering NotificationBell")}
+        {/* Pass user ID to NotificationBell */}
+        <NotificationBell userId={user?.id} />
 
-        {/* User Avatar + Dropdown */}
         <div className="relative group">
           <div className="flex items-center gap-2 cursor-pointer">
             <ProfileImage
@@ -56,7 +51,6 @@ export default function Navbar({ user, exportCSV }) {
             </span>
           </div>
 
-          {/* Dropdown */}
           <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-lg border opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
             <Link
               to="/profile"
