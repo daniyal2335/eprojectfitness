@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useOutletContext } from "react-router-dom";
 import { api } from "../api/client";
 import StatsCards from "../components/StatsCards";
@@ -7,10 +7,12 @@ import WorkoutForm from "../components/WorkoutForm";
 import NutritionForm from "../components/NutritionForm";
 import { Card, CardContent } from "../components/ui/Card";
 import toast from "react-hot-toast";
+import React from "react";
 
-export default function DashboardHome() {
+function DashboardHome() {
+  console.log("🔄 DashboardHome rendered");
+
   const token = localStorage.getItem("token");
-
   if (!token)
     return (
       <div className="min-h-screen flex items-center justify-center text-lg text-gray-700">
@@ -31,7 +33,7 @@ export default function DashboardHome() {
   const [searching, setSearching] = useState(false);
 
   // 🔄 Dashboard load
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       setLoading(true);
       const [me, st, wk, wt, rc] = await Promise.all([
@@ -41,24 +43,30 @@ export default function DashboardHome() {
         api("/api/dashboard/weight-progress"),
         api("/api/dashboard/recent"),
       ]);
-      setUser(me);
+
+      // ✅ Only update user if changed
+      setUser((prev) => {
+        if (prev && prev._id === me._id) return prev; // same user
+        return me;
+      });
+
       setStats(st);
       setWeekly(wk);
       setWeights(wt);
       setRecent(rc);
 
-      toast.success("Dashboard updated ✅");
+      toast.success("Dashboard updated ✅", { id: "dashboard-load" });
     } catch (e) {
       console.error(e);
-      toast.error("Failed to load dashboard ❌");
+      toast.error("Failed to load dashboard ❌", { id: "dashboard-load" });
     } finally {
       setLoading(false);
     }
-  };
+  }, [setUser]);
 
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
 
   // 🔎 Search function
   const handleSearch = async (e) => {
@@ -144,10 +152,7 @@ export default function DashboardHome() {
                   <h4 className="font-semibold text-gray-800 mb-2">Users</h4>
                   <ul className="space-y-1">
                     {results.users.map((u) => (
-                      <li
-                        key={u._id}
-                        className="flex items-center space-x-2 border-b py-1"
-                      >
+                      <li key={u._id} className="flex items-center space-x-2 border-b py-1">
                         <img
                           src={u.profileImage || "/default-avatar.png"}
                           alt={u.username}
@@ -163,9 +168,7 @@ export default function DashboardHome() {
               {results.workouts.length === 0 &&
                 results.meals.length === 0 &&
                 results.users.length === 0 &&
-                !searching && (
-                  <p className="text-sm text-gray-500">No results found</p>
-                )}
+                !searching && <p className="text-sm text-gray-500">No results found</p>}
             </div>
           )}
         </CardContent>
@@ -197,10 +200,7 @@ export default function DashboardHome() {
               <p className="font-medium mb-2">Recent Workouts</p>
               <ul className="space-y-2">
                 {(recent.recentWorkouts || []).map((w) => (
-                  <li
-                    key={w._id}
-                    className="text-sm text-gray-700 border-b pb-1"
-                  >
+                  <li key={w._id} className="text-sm text-gray-700 border-b pb-1">
                     <span className="font-semibold">{w.title}</span> •{" "}
                     {new Date(w.performedAt).toLocaleDateString()}
                   </li>
@@ -215,12 +215,8 @@ export default function DashboardHome() {
               <p className="font-medium mb-2">Recent Meals</p>
               <ul className="space-y-2">
                 {(recent.recentMeals || []).map((n) => (
-                  <li
-                    key={n._id}
-                    className="text-sm text-gray-700 border-b pb-1"
-                  >
-                    <span className="capitalize">{n.mealType}</span> •{" "}
-                    {n.totalCalories} kcal •{" "}
+                  <li key={n._id} className="text-sm text-gray-700 border-b pb-1">
+                    <span className="capitalize">{n.mealType}</span> • {n.totalCalories} kcal •{" "}
                     {new Date(n.date).toLocaleDateString()}
                   </li>
                 ))}
@@ -262,3 +258,7 @@ export default function DashboardHome() {
     </div>
   );
 }
+
+// ✅ React.memo to prevent re-render if props not changed
+export default React.memo(DashboardHome);
+  

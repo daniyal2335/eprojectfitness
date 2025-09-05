@@ -52,6 +52,7 @@ export default function Sidebar() {
             >
               Workouts
             </Link>
+            
             <Link
               to="/nutrition"
               className="block px-4 py-2 rounded hover:bg-gray-800"
@@ -79,6 +80,13 @@ export default function Sidebar() {
               onClick={() => setOpen(false)}
             >
               Progress
+            </Link>
+             <Link
+              to="/progress-dashboard"
+              className="block px-4 py-2 rounded hover:bg-gray-800"
+              onClick={() => setOpen(false)}
+            >
+              Progress Dashboard
             </Link>
             <Link
               to="/profile"

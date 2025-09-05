@@ -16,6 +16,7 @@ import { WeightProgressChart, WeeklyWorkoutsChart } from "./components/Charts.js
 import ProgressForm from "./components/ProgressForm.jsx";
 import WorkoutDashboard from "./components/WorkoutDashboard.jsx";
 import NutritionDashboard from "./components/NutritionDashboard.jsx";
+import ProgressDashboard from "./components/ProgressDashboard.jsx";
 
 function App() {
    useEffect(() => {
@@ -42,7 +43,8 @@ function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/workouts" element={<WorkoutDashboard />} />
           <Route path="/nutrition" element={<NutritionForm />} />
-          <Route path="/progress" element={<ProgressForm />} />
+          <Route path="/progress" element={<ProgressForm />} />\
+          <Route path="/progress-dashboard" element={<ProgressDashboard />} />
           <Route path="/weekly" element={<WeeklyWorkoutsChart />} />
           <Route path="/workouts/:id" element={<EditWorkout />} />
           <Route path="/nutrition-analytics" element={<NutritionAnalytics />} />

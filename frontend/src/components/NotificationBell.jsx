@@ -1,36 +1,59 @@
 import { useEffect, useState } from "react";
-import { Bell } from "lucide-react";
-import socket from "../socket"; // your socket instance
+import { Bell, CheckCircle } from "lucide-react";
+import socket from "../socket";
 import { api } from "../api/client";
 
 export default function NotificationBell({ userId }) {
   const [list, setList] = useState([]);
   const [open, setOpen] = useState(false);
+// ✅ Join socket room for this user
+useEffect(() => {
+  if (!userId) return;
 
-  // Load existing notifications once
+  socket.emit("join", userId);
+
+  return () => {
+    socket.emit("leave", userId);
+  };
+}, [userId]);
+
+
   useEffect(() => {
     if (!userId) return;
 
     api("/api/notifications")
-      .then(setList)
+      .then((res) => {
+        console.log("📥 Loaded unread notifications:", res);
+        setList(res);
+      })
       .catch((err) => console.error("Failed to load notifications", err));
   }, [userId]);
 
-  // Socket listener
+  // ✅ Listen for socket notifications
   useEffect(() => {
     if (!userId) return;
 
     const handleNotification = (notif) => {
-      if (notif.user === userId) setList((prev) => [notif, ...prev]);
+      console.log("🔔 Socket notif:", notif);
+      if (notif.user === userId && !notif.read) {
+        setList((prev) => [notif, ...prev]);
+          toast.success(notif.message); 
+      }
     };
 
     socket.on("notification", handleNotification);
-    return () => {
-      socket.off("notification", handleNotification);
-    };
+    return () => socket.off("notification", handleNotification);
   }, [userId]);
 
-  const unread = list.filter((n) => !n.read).length;
+  // ✅ Mark as read (remove from list)
+  const markAsRead = async (id) => {
+    try {
+      await api(`/api/notifications/mark-read/${id}`, { method: "POST" });
+      setList((prev) => prev.filter((n) => n._id !== id));
+    } catch (err) {
+      console.error("Failed to mark as read", err);
+    }
+  };
 
   return (
     <div className="relative">
@@ -39,25 +62,35 @@ export default function NotificationBell({ userId }) {
         className="relative p-2 rounded-full hover:bg-gray-100 border border-gray-300"
       >
         <Bell className="w-6 h-6 text-gray-700" />
-        {unread > 0 && (
+        {list.length > 0 && (
           <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-1">
-            {unread}
+            {list.length}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-72 bg-white rounded-xl shadow p-3 z-50">
+        <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow p-3 z-50">
           <p className="font-medium mb-2">Notifications</p>
           <div className="space-y-2 max-h-64 overflow-auto">
             {list.length ? (
               list.map((n) => (
-                <div key={n._id} className="text-sm border-b pb-2">
-                  {n.message}
+                <div
+                  key={n._id}
+                  className="flex items-center justify-between text-sm border-b pb-2"
+                >
+                  <span>{n.message}</span>
+                  <button
+                    onClick={() => markAsRead(n._id)}
+                    className="text-green-600 hover:text-green-800"
+                    title="Mark as read"
+                  >
+                    <CheckCircle size={18} />
+                  </button>
                 </div>
               ))
             ) : (
-              <p className="text-sm text-gray-500">No notifications</p>
+              <p className="text-sm text-gray-500">No new notifications</p>
             )}
           </div>
         </div>

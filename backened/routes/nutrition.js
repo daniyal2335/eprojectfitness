@@ -2,8 +2,29 @@ import express from "express";
 import verifyToken from "../utils/verifyToken.js";
 import asyncHandler from "../middleware/asyncHandler.js";
 import Nutrition from "../models/Nutrition.js";
+import Notification from "../models/Notification.js";
 
 const router = express.Router();
+
+// 🔹 Helper: create + emit notification
+const emitNotification = async (req, message) => {
+  const notif = await Notification.create({
+    user: req.user.id,
+    message,
+    read: false,
+  });
+
+  const io = req.app.get("io");
+  console.log("📤 Emitting notification to room:", req.user.id, message);
+
+  io.to(req.user.id.toString()).emit("notification", {
+    ...notif.toObject(),
+    user: notif.user.toString(),
+  });
+
+  return notif;
+};
+
 /**
  * @desc   Get single nutrition log by ID
  * @route  GET /api/nutrition/:id
@@ -31,9 +52,6 @@ router.get(
  * @route  GET /api/nutrition
  * @access Private
  */
-
-
-
 router.get(
   "/",
   verifyToken,
@@ -64,12 +82,10 @@ router.post(
   asyncHandler(async (req, res) => {
     const payload = { ...req.body, user: req.user.id };
 
-    // Ensure items is an array
     if (!Array.isArray(payload.items)) {
       payload.items = [];
     }
 
-    // Calculate totals
     const totals = payload.items.reduce(
       (acc, item) => ({
         protein: acc.protein + (item.protein || 0),
@@ -88,6 +104,10 @@ router.post(
     };
 
     const log = await Nutrition.create(payload);
+
+    // ✅ send notification
+    await emitNotification(req, `New nutrition log "${log.name || "Untitled"}" added.`);
+
     res.status(201).json(log);
   })
 );
@@ -111,6 +131,9 @@ router.put(
       return res.status(404).json({ message: "Nutrition log not found" });
     }
 
+    // ✅ send notification
+    await emitNotification(req, `Nutrition log "${updated.name || "Untitled"}" updated.`);
+
     res.json(updated);
   })
 );
@@ -132,6 +155,9 @@ router.delete(
     if (!deleted) {
       return res.status(404).json({ message: "Nutrition log not found" });
     }
+
+    // ✅ send notification
+    await emitNotification(req, `Nutrition log "${deleted.name || "Untitled"}" deleted.`);
 
     res.json({ message: "Deleted successfully" });
   })

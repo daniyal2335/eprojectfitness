@@ -2,32 +2,45 @@ import { useEffect, useState } from "react";
 import WorkoutForm from "./WorkoutForm";
 import { api } from "../api/client";
 import { Link } from "react-router-dom";
+import toast from "react-hot-toast";
+import socket from "../socket"; // socket import
 
-export default function WorkoutDashboard() {
+export default function WorkoutDashboard({ userId }) {
   const [workouts, setWorkouts] = useState([]);
   const [editing, setEditing] = useState(null);
 
   const fetchWorkouts = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await api("/api/workouts", {
+      const data = await api("/api/workouts", {
         headers: { Authorization: `Bearer ${token}` },
       });
-     const data = await api("/api/workouts", {
-  headers: { Authorization: `Bearer ${token}` },
-});
-console.log("Workouts API response:", data);
-setWorkouts(Array.isArray(data) ? data : data.workouts || []);
-
+      console.log("Workouts API response:", data);
+      setWorkouts(Array.isArray(data) ? data : data.workouts || []);
     } catch (err) {
       console.error("Failed to fetch workouts:", err);
-      setWorkouts([]); // fallback
+      setWorkouts([]);
     }
   };
 
   useEffect(() => {
     fetchWorkouts();
   }, []);
+
+  // ✅ Listen for socket notifications (toaster + bell)
+  useEffect(() => {
+    if (!userId) return;
+
+    const handleNotification = (notif) => {
+      console.log("🔔 Socket notif:", notif);
+      if (notif.user === userId && !notif.read) {
+        toast.success(notif.message); // show toaster
+      }
+    };
+
+    socket.on("notification", handleNotification);
+    return () => socket.off("notification", handleNotification);
+  }, [userId]);
 
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this workout?")) return;
@@ -67,13 +80,12 @@ setWorkouts(Array.isArray(data) ? data : data.workouts || []);
                   </p>
                 </div>
                 <div className="flex gap-2">
-                 <Link
-  to={`/workouts/${w._id}`}
-  className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md text-sm"
->
-  Edit
-</Link>
-
+                  <Link
+                    to={`/workouts/${w._id}`}
+                    className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md text-sm"
+                  >
+                    Edit
+                  </Link>
                   <button
                     onClick={() => handleDelete(w._id)}
                     className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md text-sm"

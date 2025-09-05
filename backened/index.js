@@ -22,7 +22,7 @@ dotenv.config();
 
 const app = express();
 
-// middlewares
+// Middlewares
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({ origin: process.env.CORS_ORIGIN, credentials: true }));
@@ -34,7 +34,7 @@ mongoose
   .then(() => console.log('✅ DB connected'))
   .catch((e) => console.error(e.message));
 
-// routes
+// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/workouts', workoutRoutes);
@@ -47,32 +47,48 @@ app.use('/api/notifications', notificationRoutes);
 
 app.use(errorHandler);
 
-// ✅ create http server for socket.io
+// ✅ Create http server for socket.io
 const server = createServer(app);
 
-// ✅ socket.io setup
+// ✅ Socket.io setup
 const io = new Server(server, {
   cors: {
     origin: process.env.CORS_ORIGIN,
     credentials: true,
   },
 });
-
+// ✅ Make io available in routes
+app.set('io', io);
 io.on('connection', (socket) => {
   console.log('🔌 Client connected:', socket.id);
 
-  // example: receive message
+  // ✅ Join user-specific room
+  socket.on('join', (userId) => {
+    console.log(`✅ User ${userId} joined room (socket: ${socket.id})`);
+    socket.join(userId);
+    // confirm back to frontend
+    socket.emit("joined", { room: userId });
+  });
+
+  // ✅ Leave room
+  socket.on('leave', (userId) => {
+    console.log(`❌ User ${userId} left room (socket: ${socket.id})`);
+    socket.leave(userId);
+  });
+
+  // Example: test chat
   socket.on('sendMessage', (data) => {
     console.log('📩 Message received:', data);
-    // broadcast to all clients
     io.emit('receiveMessage', data);
   });
 
   socket.on('disconnect', () => {
-    console.log('❌ Client disconnected:', socket.id);
+    console.log(`❌ Client disconnected: ${socket.id}`);
   });
 });
 
-// ✅ start server
+
+
+// ✅ Start server
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

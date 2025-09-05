@@ -5,6 +5,7 @@ import Navbar from "./Navbar";
 
 export default function DashboardLayout({  exportCSV }) {
    const [user, setUser] = useState(null); 
+   
   return (
     <div className="flex min-h-screen bg-gray-100">
       <Sidebar />
