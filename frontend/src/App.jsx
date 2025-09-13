@@ -17,17 +17,25 @@ import ProgressForm from "./components/ProgressForm.jsx";
 import WorkoutDashboard from "./components/WorkoutDashboard.jsx";
 import NutritionDashboard from "./components/NutritionDashboard.jsx";
 import ProgressDashboard from "./components/ProgressDashboard.jsx";
-
+import ForumPost from "./components/ForumPost.jsx";
+import CreatePost from "./components/CreatePost.jsx";
+import ForumList from "./components/ForumList.jsx";
 function App() {
-   useEffect(() => {
-    socket.on("newNotification", (notification) => {
-      toast.success(notification.message);
-    });
+useEffect(() => {
+  // Assume userId stored in localStorage/session
+  const userId = localStorage.getItem("userId");
+  if (userId) {
+    socket.emit("joinRoom", userId);
+  }
 
-    return () => {
-      socket.off("newNotification");
-    };
-  }, []);
+  socket.on("newNotification", (notification) => {
+    toast.success(notification.message);
+  });
+
+  return () => {
+    socket.off("newNotification");
+  };
+}, []);
 
   return (
     <BrowserRouter>
@@ -49,6 +57,12 @@ function App() {
           <Route path="/workouts/:id" element={<EditWorkout />} />
           <Route path="/nutrition-analytics" element={<NutritionAnalytics />} />
           <Route path="/nutrition-dashboard" element={<NutritionDashboard />} />
+          <Route path="/forum" element={<ForumList />} />       
+          <Route path="/forum/:id" element={<ForumPost />} />  
+          {/* <Route path="/create-post" element={<ForumCard />} />  */}
+          <Route path="/create-post" element={<CreatePost />} />
+
+        
         </Route>
       </Routes>
 

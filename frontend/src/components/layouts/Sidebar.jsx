@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Menu, X, LogOut } from "lucide-react"; // icons
+import { Menu, X, LogOut } from "lucide-react";
 
 export default function Sidebar() {
   const [open, setOpen] = useState(false);

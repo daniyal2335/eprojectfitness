@@ -23,6 +23,7 @@ export default function Navbar({ user, exportCSV }) {
       </div>
 
       <div className="flex items-center gap-4">
+        {/* Export buttons */}
         <button
           onClick={() => exportCSV("workouts")}
           className="text-sm px-3 py-1 rounded bg-gray-100 hover:bg-gray-200 transition"
@@ -36,9 +37,24 @@ export default function Navbar({ user, exportCSV }) {
           Export Nutrition CSV
         </button>
 
-        {/* Pass user ID to NotificationBell */}
-        <NotificationBell userId={user?.id} />
+        {/* Forum links */}
+        <Link
+          to="/forum"
+          className="text-sm px-3 py-1 rounded bg-gray-100 hover:bg-gray-200 transition"
+        >
+          Forum
+        </Link>
+        <Link
+          to="/create-post"
+          className="text-sm px-3 py-1 rounded bg-gray-100 hover:bg-gray-200 transition"
+        >
+          New Post
+        </Link>
 
+        {/* Notifications */}
+        <NotificationBell userId={user?._id} />
+
+        {/* Profile menu */}
         <div className="relative group">
           <div className="flex items-center gap-2 cursor-pointer">
             <ProfileImage
