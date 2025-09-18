@@ -1,14 +1,19 @@
 import mongoose from "mongoose";
 
-const forumPostSchema = new mongoose.Schema(
-  {
-    title: { type: String, required: true },
-    content: { type: String, required: true },
+const { Schema, model } = mongoose;
 
-    // ✅ Required category field
+const replySchema = new Schema({
+  content: { type: String, required: true, trim: true },
+  author: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  createdAt: { type: Date, default: Date.now },
+});
+
+const forumPostSchema = new Schema(
+  {
+    title: { type: String, required: true, trim: true, maxlength: 200 },
+    content: { type: String, required: true, trim: true, maxlength: 5000 },
     category: {
       type: String,
-      required: true,
       enum: [
         "general-discussion",
         "workout-tips",
@@ -19,22 +24,42 @@ const forumPostSchema = new mongoose.Schema(
         "success-stories",
         "equipment-reviews",
       ],
+      required: true,
     },
-
-    // ✅ Optional tags
     tags: [{ type: String }],
+    author: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    likes: [{ type: Schema.Types.ObjectId, ref: "User" }],
+    replies: [replySchema],
+    views: { type: Number, default: 0 },
+    isPinned: { type: Boolean, default: false },
 
-    author: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-    likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-    replies: [
-      {
-        content: String,
-        author: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-        createdAt: { type: Date, default: Date.now },
-      },
-    ],
+    // ✅ Forum follow system
+    followers: [{ type: Schema.Types.ObjectId, ref: "User" }],
   },
-  { timestamps: true }
+  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
-export default mongoose.model("ForumPost", forumPostSchema);
+// 🔹 Virtual fields (calculated, not stored in DB)
+forumPostSchema.virtual("likesCount").get(function () {
+  return this.likes.length;
+});
+
+forumPostSchema.virtual("repliesCount").get(function () {
+  return this.replies.length;
+});
+
+forumPostSchema.virtual("followersCount").get(function () {
+  return this.followers.length;
+});
+
+// 🔹 Auto-populate author + reply authors when finding posts
+function autoPopulate(next) {
+  this.populate("author", "username email profilePicture name.firstName name.lastName")
+      .populate("replies.author", "username email profilePicture name.firstName name.lastName");
+  next();
+}
+
+forumPostSchema.pre("find", autoPopulate);
+forumPostSchema.pre("findOne", autoPopulate);
+
+export default model("ForumPost", forumPostSchema);

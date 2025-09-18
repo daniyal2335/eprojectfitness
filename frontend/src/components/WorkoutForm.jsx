@@ -1,25 +1,35 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { api } from "../api/client";
 import ExerciseList from "./ExerciseList";
+import toast from "react-hot-toast";
 
 export default function WorkoutForm({ initial = {}, onSaved }) {
-  const [form, setForm] = useState({
+  const emptyForm = {
     title: "",
     category: "strength",
     duration: 0,
     calories: 0,
     tags: [],
     exercises: [{ name: "", sets: 0, reps: 0, weight: 0, notes: "" }],
-    ...initial,
-  });
+  };
 
+  const [form, setForm] = useState({ ...emptyForm, ...initial });
   const [tagInput, setTagInput] = useState("");
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState(null);
 
   const set = (k, v) => setForm((s) => ({ ...s, [k]: v }));
+
+useEffect(() => {
+  if (!initial) return;
+
+  // Sirf tab update karo jab _id alag ho ya form empty ho
+  if (initial._id !== form._id) {
+    setForm({ ...emptyForm, ...initial });
+  }
+  // else do nothing
+}, [initial]);
 
   // --- Validation ---
   const validate = () => {
@@ -57,21 +67,19 @@ export default function WorkoutForm({ initial = {}, onSaved }) {
     set("tags", form.tags.filter((_, i) => i !== index));
   };
 
-  // --- Save Handler ---
+  // --- Save handler ---
   const save = async (e) => {
     e.preventDefault();
     if (!validate()) return;
 
     setLoading(true);
-    setMessage(null);
 
     try {
       const payload = {
         ...form,
-        tags:
-          typeof form.tags === "string"
-            ? form.tags.split(",").map((t) => t.trim())
-            : form.tags,
+        tags: Array.isArray(form.tags)
+          ? form.tags
+          : form.tags.split(",").map((t) => t.trim()),
       };
 
       const path = initial?._id ? `/api/workouts/${initial._id}` : "/api/workouts";
@@ -88,11 +96,23 @@ export default function WorkoutForm({ initial = {}, onSaved }) {
         body: JSON.stringify(payload),
       });
 
-      setMessage({ type: "success", text: "✅ Workout saved successfully!" });
+      toast.success(
+        initial?._id
+          ? `✅ "${form.title}" updated successfully!`
+          : `✅ "${form.title}" created successfully!`
+      );
+
+      // ✅ Reset form if it was a "create"
+      if (!initial?._id) {
+        setForm(emptyForm);
+        setTagInput("");
+        setErrors({});
+      }
+
       onSaved?.();
     } catch (err) {
       console.error(err);
-      setMessage({ type: "error", text: "❌ Failed to save workout" });
+      toast.error("❌ Failed to save workout");
     } finally {
       setLoading(false);
     }
@@ -109,18 +129,6 @@ export default function WorkoutForm({ initial = {}, onSaved }) {
       <h2 className="text-lg sm:text-xl font-bold text-center mb-4">
         {initial?._id ? "Edit Workout" : "Create Workout"}
       </h2>
-
-      {message && (
-        <div
-          className={`p-3 rounded-lg text-sm ${
-            message.type === "success"
-              ? "bg-green-100 text-green-700"
-              : "bg-red-100 text-red-700"
-          }`}
-        >
-          {message.text}
-        </div>
-      )}
 
       {/* Title */}
       <div>

@@ -20,11 +20,22 @@ function DashboardHome() {
       </div>
     );
 
-  const { user, setUser } = useOutletContext();
-  const [stats, setStats] = useState({ totalWorkouts: 0, caloriesBurned: 0, hoursTrained: 0 });
+  // ✅ also get setWorkouts & setNutrition from parent (DashboardLayout)
+  const { user, setUser, setWorkouts, setNutrition } = useOutletContext();
+
+  const [stats, setStats] = useState({
+    totalWorkouts: 0,
+    caloriesBurned: 0,
+    hoursTrained: 0,
+  });
   const [weekly, setWeekly] = useState([]);
+  const [posts, setPosts] = useState([]);
   const [weights, setWeights] = useState([]);
-  const [recent, setRecent] = useState({ recentWorkouts: [], recentMeals: [], latestProgress: null });
+  const [recent, setRecent] = useState({
+    recentWorkouts: [],
+    recentMeals: [],
+    latestProgress: null,
+  });
   const [loading, setLoading] = useState(true);
 
   // Search state
@@ -32,37 +43,43 @@ function DashboardHome() {
   const [results, setResults] = useState({ workouts: [], meals: [], users: [] });
   const [searching, setSearching] = useState(false);
 
-  // 🔄 Dashboard load
   const load = useCallback(async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const [me, st, wk, wt, rc] = await Promise.all([
-        api("/api/profile/me"),
-        api("/api/dashboard/stats"),
-        api("/api/dashboard/weekly-workouts"),
-        api("/api/dashboard/weight-progress"),
-        api("/api/dashboard/recent"),
-      ]);
+      const me = await api("/api/profile/me").catch((e) => null);
+      const st = await api("/api/dashboard/stats").catch((e) => ({
+        totalWorkouts: 0,
+        caloriesBurned: 0,
+        hoursTrained: 0,
+      }));
+      const wk = await api("/api/dashboard/weekly-workouts").catch((e) => []);
+      const wt = await api("/api/dashboard/weight-progress").catch((e) => []);
+      const rc = await api("/api/dashboard/recent").catch((e) => ({
+        recentWorkouts: [],
+        recentMeals: [],
+        latestProgress: null,
+      }));
+      const fp = await api("/api/forum/posts").catch((e) => []);
 
-      // ✅ Only update user if changed
-      setUser((prev) => {
-        if (prev && prev._id === me._id) return prev; // same user
-        return me;
-      });
-
+      if (me) setUser((prev) => (prev && prev._id === me._id ? prev : me));
       setStats(st);
       setWeekly(wk);
       setWeights(wt);
       setRecent(rc);
+      setPosts(fp);
+
+      // ✅ sync with parent layout for export
+      setWorkouts(rc.recentWorkouts || []);
+      setNutrition(rc.recentMeals || []);
 
       toast.success("Dashboard updated ✅", { id: "dashboard-load" });
     } catch (e) {
-      console.error(e);
-      toast.error("Failed to load dashboard ❌", { id: "dashboard-load" });
+      console.error("Dashboard load failed:", e);
+      toast.error("Failed to load dashboard ❌");
     } finally {
       setLoading(false);
     }
-  }, [setUser]);
+  }, [setUser, setWorkouts, setNutrition]);
 
   useEffect(() => {
     load();
@@ -94,16 +111,6 @@ function DashboardHome() {
 
   return (
     <div className="space-y-8 px-4 sm:px-6 lg:px-8 py-6">
-      {/* Welcome Section */}
-      <div>
-        <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
-          Welcome back, {user?.name || "Athlete"} 👋
-        </h2>
-        <p className="text-gray-600 text-sm sm:text-base">
-          Here’s a quick look at your fitness journey.
-        </p>
-      </div>
-
       {/* 🔎 Search Bar */}
       <Card className="shadow-lg">
         <CardContent>
@@ -168,7 +175,9 @@ function DashboardHome() {
               {results.workouts.length === 0 &&
                 results.meals.length === 0 &&
                 results.users.length === 0 &&
-                !searching && <p className="text-sm text-gray-500">No results found</p>}
+                !searching && (
+                  <p className="text-sm text-gray-500">No results found</p>
+                )}
             </div>
           )}
         </CardContent>
@@ -261,4 +270,3 @@ function DashboardHome() {
 
 // ✅ React.memo to prevent re-render if props not changed
 export default React.memo(DashboardHome);
-  

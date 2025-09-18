@@ -10,7 +10,7 @@ const WorkoutSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref:'User', required:true },
   title: String,
   category: { type:String, enum:['strength','cardio','mobility','other'], default:'strength' },
-  tags: [String],
+     tags: [{ type: String }],  
   exercises: [ExerciseSchema],
   duration: Number, // minutes
   calories: Number,

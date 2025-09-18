@@ -3,12 +3,11 @@ import { api } from "../api/client";
 import NutritionForm from "./NutritionForm";
 import NutritionAnalytics from "./NutritionAnalytics";
 import { Button } from "./ui/Button";
+import toast from "react-hot-toast"; // ✅ toast import
 
 export default function NutritionDashboard() {
   const [meals, setMeals] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editMeal, setEditMeal] = useState(null);
 
@@ -22,7 +21,7 @@ export default function NutritionDashboard() {
       setMeals(data);
     } catch (err) {
       console.error(err);
-      setError("Failed to load meals");
+      toast.error("❌ Failed to load meals");
     } finally {
       setLoading(false);
     }
@@ -32,7 +31,7 @@ export default function NutritionDashboard() {
     fetchMeals();
   }, []);
 
-  // 🔹 Delete log (msg on page instead of alert)
+  // 🔹 Delete log
   const deleteMeal = async (id) => {
     if (!window.confirm("Delete this log?")) return;
     try {
@@ -42,12 +41,10 @@ export default function NutritionDashboard() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setMeals((s) => s.filter((m) => m._id !== id));
-      setSuccess("✅ Meal deleted successfully!");
-      setError("");
+      toast.success(" Meal deleted successfully!");
     } catch (err) {
       console.error(err);
-      setError("❌ Failed to delete meal.");
-      setSuccess("");
+      toast.error("❌ Failed to delete meal.");
     }
   };
 
@@ -68,10 +65,6 @@ export default function NutritionDashboard() {
         </Button>
       </div>
 
-      {/* ✅ Show success/error messages */}
-      {success && <p className="text-green-600 font-semibold">{success}</p>}
-      {error && <p className="text-red-600 font-semibold">{error}</p>}
-
       {/* ✅ Form Modal/Section */}
       {showForm && (
         <div className="bg-gray-50 border rounded-lg p-4 shadow">
@@ -80,8 +73,7 @@ export default function NutritionDashboard() {
             onSaved={() => {
               setShowForm(false);
               fetchMeals();
-              setSuccess("✅ Meal saved successfully!");
-              setError("");
+              toast.success("Meal saved successfully!");
             }}
           />
           <Button
@@ -106,10 +98,8 @@ export default function NutritionDashboard() {
                 {new Date(meal.createdAt).toLocaleString()}
               </p>
               <p className="text-gray-700 mt-1">
-                Calories:{" "}
-                <span className="font-bold">{meal.totalCalories}</span> | P:{" "}
-                {meal.totals?.protein}g | C: {meal.totals?.carbs}g | F:{" "}
-                {meal.totals?.fats}g
+                Calories: <span className="font-bold">{meal.totalCalories}</span> | P:{" "}
+                {meal.totals?.protein}g | C: {meal.totals?.carbs}g | F: {meal.totals?.fats}g
               </p>
             </div>
             <div className="flex gap-2 mt-2 md:mt-0">
@@ -133,8 +123,6 @@ export default function NutritionDashboard() {
         ))}
       </div>
 
-      {/* ✅ Analytics Section */}
-      <NutritionAnalytics />
     </div>
   );
 }

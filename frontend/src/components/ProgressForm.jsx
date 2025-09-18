@@ -1,214 +1,104 @@
 import { useState } from "react";
 import { api } from "../api/client";
+import { Button } from "./ui/Button";
+import toast from "react-hot-toast";
 
-export default function ProgressForm({ onSaved }) {
-  const [form, setForm] = useState({
-    weight: "",
-    chest: "",
-    waist: "",
-    hips: "",
-    arms: "",
-    thighs: "",
-    runTime: "",
-    liftMax: "",
+export default function ProgressForm({ initialData = {}, onSaved }) {
+  const [formData, setFormData] = useState({
+    weight: initialData?.weight || "",
+    bodyFat: initialData?.bodyFat || "",
+    chest: initialData?.chest || "",
+    waist: initialData?.waist || "",
+    hips: initialData?.hips || "",
+    arms: initialData?.arms || "",
+    thighs: initialData?.thighs || "",
+    runTime: initialData?.runTime || "",
+    liftMax: initialData?.liftMax || "",
   });
 
   const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState(null);
 
-  const handleChange = (k, v) => {
-    setForm((s) => ({ ...s, [k]: v }));
-    setErrors((e) => ({ ...e, [k]: "" })); // clear error for that field
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: "" })); // clear error on change
   };
 
   const validate = () => {
-    const errs = {};
+    const newErrors = {};
+    if (!formData.weight || formData.weight <= 0) newErrors.weight = "Weight must be a positive number";
+    if (!formData.bodyFat || formData.bodyFat < 0 || formData.bodyFat > 100) newErrors.bodyFat = "Body fat must be 0-100%";
+    ["chest", "waist", "hips", "arms", "thighs"].forEach((field) => {
+      if (!formData[field] || formData[field] <= 0) newErrors[field] = `${field.charAt(0).toUpperCase() + field.slice(1)} must be positive`;
+    });
+    if (!formData.runTime || formData.runTime < 0) newErrors.runTime = "Run time cannot be negative";
+    if (!formData.liftMax || formData.liftMax < 0) newErrors.liftMax = "Max lift cannot be negative";
 
-    // Required weight
-    if (!form.weight) errs.weight = "Weight is required.";
-    else if (form.weight <= 0) errs.weight = "Weight must be greater than 0.";
-
-    // Optional but >0 if filled
-    ["chest", "waist", "hips", "arms", "thighs", "runTime", "liftMax"].forEach(
-      (field) => {
-        if (form[field] && form[field] <= 0) {
-          errs[field] = `${field} must be greater than 0.`;
-        }
-      }
-    );
-
-    setErrors(errs);
-    return Object.keys(errs).length === 0;
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
-  const save = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validate()) return;
+    if (!validate()) {
+      toast.error("Please fix validation errors before submitting");
+      return;
+    }
 
-    setLoading(true);
-    setMessage(null);
+    const token = localStorage.getItem("token");
 
     try {
-      await api("/api/progress", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify(form),
-      });
+      let result;
 
-      setMessage({ type: "success", text: "✅ Progress saved successfully!" });
-      onSaved?.();
-      setForm({
-        weight: "",
-        chest: "",
-        waist: "",
-        hips: "",
-        arms: "",
-        thighs: "",
-        runTime: "",
-        liftMax: "",
-      }); // reset form
+      if (initialData && initialData._id) {
+        result = await api(`/api/progress/${initialData._id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(formData),
+        });
+      } else {
+        result = await api("/api/progress", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(formData),
+        });
+      }
+
+      if (onSaved) onSaved(result.progress || result);
+      toast.success("Progress saved successfully!");
     } catch (err) {
-      console.error(err);
-      setMessage({ type: "error", text: "❌ Failed to save progress." });
-    } finally {
-      setLoading(false);
+      console.error("❌ Failed to save progress:", err);
+      toast.error("Failed to save progress");
     }
   };
 
-  const inputClass =
-    "border p-2 w-full rounded text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500";
-
   return (
-    <form
-      onSubmit={save}
-      className="space-y-3 bg-white p-6 rounded-2xl shadow"
-    >
-      <h2 className="font-bold text-lg">Record Progress</h2>
-
-      {/* ✅ Success/Error Message */}
-      {message && (
-        <div
-          className={`p-3 rounded-lg text-sm ${
-            message.type === "success"
-              ? "bg-green-100 text-green-700"
-              : "bg-red-100 text-red-700"
-          }`}
-        >
-          {message.text}
+    <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
+      {Object.entries(formData).map(([key, value]) => (
+        <div key={key}>
+          <label className="block text-sm capitalize">{key.replace(/([A-Z])/g, " $1")}</label>
+          <input
+            type="number"
+            name={key}
+            value={value}
+            onChange={handleChange}
+            className={`border rounded p-2 w-full ${errors[key] ? "border-red-500" : ""}`}
+          />
+          {errors[key] && <p className="text-red-500 text-xs mt-1">{errors[key]}</p>}
         </div>
-      )}
+      ))}
 
-      {/* Weight */}
-      <div>
-        <input
-          placeholder="Weight (kg)"
-          type="number"
-          value={form.weight}
-          onChange={(e) => handleChange("weight", Number(e.target.value))}
-          className={inputClass}
-        />
-        {errors.weight && <p className="text-red-500 text-sm">{errors.weight}</p>}
+      <div className="col-span-2 flex justify-end">
+        <Button type="submit" className="bg-green-600 text-white">
+          {initialData?._id ? "Update Progress" : "Save Progress"}
+        </Button>
       </div>
-
-      {/* Chest */}
-      <div>
-        <input
-          placeholder="Chest (cm)"
-          type="number"
-          value={form.chest}
-          onChange={(e) => handleChange("chest", Number(e.target.value))}
-          className={inputClass}
-        />
-        {errors.chest && <p className="text-red-500 text-sm">{errors.chest}</p>}
-      </div>
-
-      {/* Waist */}
-      <div>
-        <input
-          placeholder="Waist (cm)"
-          type="number"
-          value={form.waist}
-          onChange={(e) => handleChange("waist", Number(e.target.value))}
-          className={inputClass}
-        />
-        {errors.waist && <p className="text-red-500 text-sm">{errors.waist}</p>}
-      </div>
-
-      {/* Hips */}
-      <div>
-        <input
-          placeholder="Hips (cm)"
-          type="number"
-          value={form.hips}
-          onChange={(e) => handleChange("hips", Number(e.target.value))}
-          className={inputClass}
-        />
-        {errors.hips && <p className="text-red-500 text-sm">{errors.hips}</p>}
-      </div>
-
-      {/* Arms */}
-      <div>
-        <input
-          placeholder="Arms (cm)"
-          type="number"
-          value={form.arms}
-          onChange={(e) => handleChange("arms", Number(e.target.value))}
-          className={inputClass}
-        />
-        {errors.arms && <p className="text-red-500 text-sm">{errors.arms}</p>}
-      </div>
-
-      {/* Thighs */}
-      <div>
-        <input
-          placeholder="Thighs (cm)"
-          type="number"
-          value={form.thighs}
-          onChange={(e) => handleChange("thighs", Number(e.target.value))}
-          className={inputClass}
-        />
-        {errors.thighs && <p className="text-red-500 text-sm">{errors.thighs}</p>}
-      </div>
-
-      {/* Run Time */}
-      <div>
-        <input
-          placeholder="Run Time (min)"
-          type="number"
-          value={form.runTime}
-          onChange={(e) => handleChange("runTime", Number(e.target.value))}
-          className={inputClass}
-        />
-        {errors.runTime && (
-          <p className="text-red-500 text-sm">{errors.runTime}</p>
-        )}
-      </div>
-
-      {/* Lift Max */}
-      <div>
-        <input
-          placeholder="Max Lift (kg)"
-          type="number"
-          value={form.liftMax}
-          onChange={(e) => handleChange("liftMax", Number(e.target.value))}
-          className={inputClass}
-        />
-        {errors.liftMax && (
-          <p className="text-red-500 text-sm">{errors.liftMax}</p>
-        )}
-      </div>
-
-      <button
-        type="submit"
-        disabled={loading}
-        className="bg-blue-600 text-white px-4 py-2 rounded w-full hover:bg-blue-700 disabled:opacity-50"
-      >
-        {loading ? "Saving..." : "Save Progress"}
-      </button>
     </form>
   );
 }

@@ -3,23 +3,34 @@ import WorkoutForm from "./WorkoutForm";
 import { api } from "../api/client";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
-import socket from "../socket"; // socket import
+import socket from "../socket";
 
-export default function WorkoutDashboard({ userId }) {
+export default function WorkoutDashboard() {
   const [workouts, setWorkouts] = useState([]);
   const [editing, setEditing] = useState(null);
+  const [loading, setLoading] = useState(true);
 
+  // ✅ Fetch workouts
   const fetchWorkouts = async () => {
     try {
       const token = localStorage.getItem("token");
       const data = await api("/api/workouts", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log("Workouts API response:", data);
-      setWorkouts(Array.isArray(data) ? data : data.workouts || []);
+
+      const list = Array.isArray(data)
+        ? data
+        : Array.isArray(data.workouts)
+        ? data.workouts
+        : [];
+
+      setWorkouts(list);
     } catch (err) {
       console.error("Failed to fetch workouts:", err);
+      toast.error("Failed to load workouts ❌");
       setWorkouts([]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -27,34 +38,83 @@ export default function WorkoutDashboard({ userId }) {
     fetchWorkouts();
   }, []);
 
-  // ✅ Listen for socket notifications (toaster + bell)
+  // ✅ Socket updates (refetch always + toast)
   useEffect(() => {
-    if (!userId) return;
-
-    const handleNotification = (notif) => {
-      console.log("🔔 Socket notif:", notif);
-      if (notif.user === userId && !notif.read) {
-        toast.success(notif.message); // show toaster
-      }
+    const handleCreated = () => {
+      fetchWorkouts();
+      toast.success("Workout created ✅");
     };
 
-    socket.on("notification", handleNotification);
-    return () => socket.off("notification", handleNotification);
-  }, [userId]);
+    const handleUpdated = () => {
+      fetchWorkouts();
+      toast.success("Workout updated ✅");
+    };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this workout?")) return;
+    const handleDeleted = () => {
+      fetchWorkouts();
+      toast.success("Workout deleted ✅");
+    };
+
+    socket.on("workout_created", handleCreated);
+    socket.on("workout_updated", handleUpdated);
+    socket.on("workout_deleted", handleDeleted);
+
+    return () => {
+      socket.off("workout_created", handleCreated);
+      socket.off("workout_updated", handleUpdated);
+      socket.off("workout_deleted", handleDeleted);
+    };
+  }, []);
+
+// ✅ Delete workout
+const handleDelete = async (id) => {
+  if (!window.confirm("Are you sure you want to delete this workout?")) return;
+
+  try {
     const token = localStorage.getItem("token");
     await api(`/api/workouts/${id}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });
-    fetchWorkouts();
+
+    // ✅ Optimistically remove from UI immediately
+    setWorkouts((prev) => prev.filter((w) => w._id !== id));
+
+    toast.success("Workout deleted ✅");
+  } catch (err) {
+    console.error("Failed to delete workout:", err);
+    toast.error("Failed to delete workout ❌");
+  }
+};
+
+  // ✅ Fields to skip
+  const hiddenFields = ["_id", "user", "__v", "createdAt", "updatedAt"];
+
+  // ✅ Helper to render values
+  const renderValue = (key, value) => {
+    if (Array.isArray(value)) {
+      if (key === "tags") {
+        return value.join(", ");
+      }
+      if (key === "exercises") {
+        return value
+          .map(
+            (ex) =>
+              `${ex.name} • ${ex.sets || 0} sets • ${ex.reps || 0} reps • ${
+                ex.weight || 0
+              } kg`
+          )
+          .join(" | ");
+      }
+    }
+    if (typeof value === "object" && value !== null) {
+      return JSON.stringify(value);
+    }
+    return String(value);
   };
 
   return (
     <div className="space-y-6">
-      {/* Workout Form */}
       <WorkoutForm
         initial={editing || {}}
         onSaved={() => {
@@ -63,20 +123,33 @@ export default function WorkoutDashboard({ userId }) {
         }}
       />
 
-      {/* Workout List */}
       <div className="bg-white p-6 rounded-2xl shadow-lg">
         <h2 className="text-lg font-bold mb-4">My Workouts</h2>
 
-        {workouts.length === 0 ? (
+        {loading ? (
+          <p>Loading...</p>
+        ) : workouts.length === 0 ? (
           <p className="text-gray-500">No workouts yet.</p>
         ) : (
           <ul className="divide-y">
             {workouts.map((w) => (
-              <li key={w._id} className="py-3 flex justify-between items-center">
+              <li
+                key={w._id}
+                className="py-4 flex justify-between items-center"
+              >
                 <div>
-                  <p className="font-semibold">{w.title}</p>
-                  <p className="text-sm text-gray-500">
-                    {w.category} • {w.duration} min • {w.calories} cal
+                  <p className="font-semibold text-indigo-700">{w.title}</p>
+                  <p className="text-sm text-gray-600">
+                    {Object.entries(w)
+                      .filter(
+                        ([key]) => !hiddenFields.includes(key) && key !== "title"
+                      )
+                      .map(([key, value]) => (
+                        <span key={key} className="mr-3 block">
+                          <strong className="capitalize">{key}:</strong>{" "}
+                          {renderValue(key, value)}
+                        </span>
+                      ))}
                   </p>
                 </div>
                 <div className="flex gap-2">

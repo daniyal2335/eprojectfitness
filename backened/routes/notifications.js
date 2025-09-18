@@ -6,37 +6,53 @@ import Notification from "../models/Notification.js";
 const router = express.Router();
 
 /**
+ * 🔹 Helper: Emit notification via socket.io
+ */
+export async function emitNotification(req, { user, message, type = "info" }) {
+  const notif = await Notification.create({
+    user,
+    message,
+    type,
+    read: false,
+  });
+
+  const io = req.app.get("io");
+  if (io) {
+    io.to(user.toString()).emit("notification", {
+      ...notif.toObject(),
+      user: notif.user.toString(),
+    });
+  }
+
+  return notif;
+}
+
+/**
  * 🔹 Get notifications
- * query: ?unread=true to get only unread
+ * query: ?unread=true to fetch only unread
  */
 router.get(
   "/",
   verifyToken,
   asyncHandler(async (req, res) => {
     const { unread } = req.query;
-
     const filter = { user: req.user.id };
+
     if (unread === "true") filter.read = false;
 
     const list = await Notification.find(filter)
       .sort({ createdAt: -1 })
       .limit(50);
 
-    console.log(
-      `📥 Fetching ${unread ? "unread" : "all"} notifications for:`,
-      req.user.id,
-      list.length
-    );
-
     res.json(list);
   })
 );
 
 /**
- * 🔹 Mark single notification as read
+ * 🔹 Mark a single notification as read
  */
-router.post(
-  "/mark-read/:id",
+router.patch(
+  "/:id/read",
   verifyToken,
   asyncHandler(async (req, res) => {
     const updated = await Notification.findOneAndUpdate(
@@ -49,16 +65,15 @@ router.post(
       return res.status(404).json({ error: "Notification not found" });
     }
 
-    console.log("✅ Marked as read:", updated._id);
-    res.json({ message: "ok" });
+    res.json({ message: "ok", notification: updated });
   })
 );
 
 /**
- * 🔹 Mark all as read
+ * 🔹 Mark all notifications as read
  */
-router.post(
-  "/mark-read-all",
+router.patch(
+  "/read-all",
   verifyToken,
   asyncHandler(async (req, res) => {
     const result = await Notification.updateMany(
@@ -66,41 +81,49 @@ router.post(
       { read: true }
     );
 
-    console.log("✅ Marked all as read for:", req.user.id);
     res.json({ message: "ok", modified: result.modifiedCount });
   })
 );
 
 /**
- * 🔹 Create + emit notification
+ * 🔹 Create a manual notification (API trigger)
  */
-// routes/notifications.js
-async function emitNotification(req, message, type = "info") {
-  const notif = await Notification.create({
-    user: req.user.id,
-    message,
-    type,
-    read: false,
-  });
+router.post(
+  "/",
+  verifyToken,
+  asyncHandler(async (req, res) => {
+    const { message, type = "info" } = req.body;
+    if (!message) {
+      return res.status(400).json({ message: "Message required" });
+    }
 
-  const io = req.app.get("io");
-  io.to(req.user.id.toString()).emit("notification", {
-    ...notif.toObject(),
-    user: notif.user.toString(),
-  });
+    const notif = await emitNotification(req, {
+      user: req.user.id,
+      message,
+      type,
+    });
 
-  return notif;
-}
+    res.status(201).json(notif);
+  })
+);
 
-// Manual endpoint
-router.post("/", verifyToken, asyncHandler(async (req, res) => {
-  const { message, type } = req.body;
-  if (!message) return res.status(400).json({ message: "Message required" });
+/**
+ * 🔹 Test notification (for debugging)
+ */
+router.post(
+  "/test",
+  verifyToken,
+  asyncHandler(async (req, res) => {
+    const { message = "Test Notification" } = req.body;
 
-  const notif = await emitNotification(req, message, type || "info");
-  res.status(201).json(notif);
-}));
+    const notif = await emitNotification(req, {
+      user: req.user.id,
+      message,
+      type: "info",
+    });
 
+    res.json({ success: true, notif });
+  })
+);
 
-export { emitNotification };
 export default router;

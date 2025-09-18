@@ -6,16 +6,16 @@ import { api } from "../api/client";
 export default function NotificationBell({ userId }) {
   const [list, setList] = useState([]);
   const [open, setOpen] = useState(false);
-// ✅ Join socket room for this user
 useEffect(() => {
   if (!userId) return;
 
-  socket.emit("join", userId);
+  socket.emit("register", userId); // ✅ backend ke register event se match
 
   return () => {
-    socket.emit("leave", userId);
+    socket.emit("unregister", userId); // optional cleanup
   };
 }, [userId]);
+
 
 
   useEffect(() => {
@@ -73,25 +73,45 @@ useEffect(() => {
         <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow p-3 z-50">
           <p className="font-medium mb-2">Notifications</p>
           <div className="space-y-2 max-h-64 overflow-auto">
-            {list.length ? (
-              list.map((n) => (
-                <div
-                  key={n._id}
-                  className="flex items-center justify-between text-sm border-b pb-2"
-                >
-                  <span>{n.message}</span>
-                  <button
-                    onClick={() => markAsRead(n._id)}
-                    className="text-green-600 hover:text-green-800"
-                    title="Mark as read"
-                  >
-                    <CheckCircle size={18} />
-                  </button>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-gray-500">No new notifications</p>
-            )}
+           <ul className="space-y-2 max-h-64 overflow-auto">
+  {list.length ? (
+    list.map((n) => (
+      <li
+        key={n._id}
+        className={`p-3 border-b cursor-pointer flex justify-between items-center ${
+          n.isRead ? "bg-gray-100" : "bg-white"
+        }`}
+      >
+        <div>
+          <p className="text-sm">
+            {n.type === "goal" && "🏆 "}
+            {n.type === "workout" && "💪 "}
+            {n.type === "follow" && "👥 "}
+            {n.type === "like" && "👍 "}
+            {n.type === "reply" && "💬 "}
+            {n.message}
+          </p>
+          {n.link && (
+            <a href={n.link} className="text-blue-500 text-xs">
+              View
+            </a>
+          )}
+        </div>
+
+        <button
+          onClick={() => markAsRead(n._id)}
+          className="text-green-600 hover:text-green-800"
+          title="Mark as read"
+        >
+          <CheckCircle size={18} />
+        </button>
+      </li>
+    ))
+  ) : (
+    <p className="text-sm text-gray-500">No new notifications</p>
+  )}
+</ul>
+
           </div>
         </div>
       )}

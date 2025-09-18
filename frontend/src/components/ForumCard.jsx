@@ -1,29 +1,31 @@
 import { Link } from "react-router-dom";
 import { MessageCircle, ThumbsUp } from "lucide-react";
 import { useState } from "react";
+import FollowButton from "./FollowButton";
 
-export default function ForumCard({ post, onLike, onViewComments }) {
-  if (!post) return null;
+export default function ForumCard({ post, onLike, onFollowUpdate, onViewComments }) {
+  const [isLiked, setIsLiked] = useState(post.isLikedByUser);
+  const [likesCount, setLikesCount] = useState(post.likesCount || 0);
+  const [isFollowed, setIsFollowed] = useState(post.isFollowedByUser || false);
+
+  const handleLocalLike = async () => {
+    const updatedLiked = !isLiked;
+    setIsLiked(updatedLiked);
+    setLikesCount(prev => (updatedLiked ? prev + 1 : prev - 1));
+
+    if (onLike) await onLike(post._id);
+  };
+
+  const handleFollowChange = (newState) => {
+    setIsFollowed(newState);
+    if (onFollowUpdate) onFollowUpdate(post._id, newState);
+  };
 
   const truncatedContent =
     post.content?.length > 150 ? post.content.slice(0, 150) + "..." : post.content;
 
-  // Local state for immediate UI update
-  const [isLiked, setIsLiked] = useState(post.isLiked);
-  const [likesCount, setLikesCount] = useState(post.likesCount || 0);
-
-  const handleLocalLike = async () => {
-    // Update UI immediately
-    setIsLiked(!isLiked);
-    setLikesCount(prev => (isLiked ? prev - 1 : prev + 1));
-
-    // Call parent function to sync with backend
-    if (onLike) await onLike(post._id, !isLiked);
-  };
-
   return (
     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-lg p-5 mb-4 hover:scale-[1.01] transition-transform duration-200">
-      
       <Link to={`/forum/${post._id}`} className="group">
         <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 transition">
           {post.title}
@@ -34,7 +36,7 @@ export default function ForumCard({ post, onLike, onViewComments }) {
 
       <div className="flex justify-between items-center mt-4 text-sm text-gray-500 dark:text-gray-400">
         <span className="font-medium">{post.author?.username || "Anonymous"}</span>
-        <div className="flex gap-4 items-center">
+        <div className="flex gap-2 items-center">
           {/* Like button */}
           <button
             onClick={handleLocalLike}
@@ -44,6 +46,13 @@ export default function ForumCard({ post, onLike, onViewComments }) {
           >
             <ThumbsUp size={16} /> {likesCount}
           </button>
+
+          {/* Follow button */}
+          <FollowButton
+            targetId={post._id}
+            initialFollowed={isFollowed}
+            onFollowChange={handleFollowChange}
+          />
 
           {/* Comments button */}
           <button

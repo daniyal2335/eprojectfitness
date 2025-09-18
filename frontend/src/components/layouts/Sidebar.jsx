@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Menu, X, LogOut } from "lucide-react";
@@ -53,13 +54,13 @@ export default function Sidebar() {
               Workouts
             </Link>
             
-            <Link
+            {/* <Link
               to="/nutrition"
               className="block px-4 py-2 rounded hover:bg-gray-800"
               onClick={() => setOpen(false)}
             >
               Nutrition
-            </Link>
+            </Link> */}
             <Link
               to="/nutrition-analytics"
               className="block px-4 py-2 rounded hover:bg-gray-800"
@@ -74,13 +75,13 @@ export default function Sidebar() {
             >
               Nutrition Dashboard
             </Link>
-            <Link
+            {/* <Link
               to="/progress"
               className="block px-4 py-2 rounded hover:bg-gray-800"
               onClick={() => setOpen(false)}
             >
               Progress
-            </Link>
+            </Link> */}
              <Link
               to="/progress-dashboard"
               className="block px-4 py-2 rounded hover:bg-gray-800"
@@ -95,13 +96,13 @@ export default function Sidebar() {
             >
               Edit Profile
             </Link>
-            <Link
+            {/* <Link
               to="/support"
               className="block px-4 py-2 rounded hover:bg-gray-800"
               onClick={() => setOpen(false)}
             >
               Support
-            </Link>
+            </Link> */}
           </nav>
         </div>
 

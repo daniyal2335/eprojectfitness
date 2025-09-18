@@ -20,22 +20,25 @@ import ProgressDashboard from "./components/ProgressDashboard.jsx";
 import ForumPost from "./components/ForumPost.jsx";
 import CreatePost from "./components/CreatePost.jsx";
 import ForumList from "./components/ForumList.jsx";
+
 function App() {
-useEffect(() => {
-  // Assume userId stored in localStorage/session
-  const userId = localStorage.getItem("userId");
-  if (userId) {
-    socket.emit("joinRoom", userId);
-  }
+//   useEffect(() => {
+//   socket.on("profile_updated", (data) => {
+//     if (data.userId === user._id) {
+//       setUser(prev => ({ ...prev, profilePicture: data.newPicture }));
+//     }
+//   });
+// }, [user._id]);
 
-  socket.on("newNotification", (notification) => {
-    toast.success(notification.message);
-  });
+   useEffect(() => {
+    socket.on("newNotification", (notification) => {
+      toast.success(notification.message);
+    });
 
-  return () => {
-    socket.off("newNotification");
-  };
-}, []);
+    return () => {
+      socket.off("newNotification");
+    };
+  }, []);
 
   return (
     <BrowserRouter>
@@ -51,18 +54,16 @@ useEffect(() => {
           <Route path="/profile" element={<Profile />} />
           <Route path="/workouts" element={<WorkoutDashboard />} />
           <Route path="/nutrition" element={<NutritionForm />} />
-          <Route path="/progress" element={<ProgressForm />} />\
-          <Route path="/progress-dashboard" element={<ProgressDashboard />} />
+          <Route path="/progress" element={<ProgressForm />} />
+              <Route path="/progress-dashboard" element={<ProgressDashboard />} />
           <Route path="/weekly" element={<WeeklyWorkoutsChart />} />
           <Route path="/workouts/:id" element={<EditWorkout />} />
           <Route path="/nutrition-analytics" element={<NutritionAnalytics />} />
           <Route path="/nutrition-dashboard" element={<NutritionDashboard />} />
-          <Route path="/forum" element={<ForumList />} />       
+              <Route path="/forum" element={<ForumList />} />       
           <Route path="/forum/:id" element={<ForumPost />} />  
           {/* <Route path="/create-post" element={<ForumCard />} />  */}
           <Route path="/create-post" element={<CreatePost />} />
-
-        
         </Route>
       </Routes>
 

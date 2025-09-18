@@ -3,8 +3,9 @@ import ProfileImage from "../ProfileImage";
 import NotificationBell from "../NotificationBell";
 import { Link, useNavigate } from "react-router-dom";
 import { LogOut, User } from "lucide-react";
+import { downloadFile } from "../../utils/downloadFile";
 
-export default function Navbar({ user, exportCSV }) {
+export default function Navbar({ user }) {
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -23,15 +24,15 @@ export default function Navbar({ user, exportCSV }) {
       </div>
 
       <div className="flex items-center gap-4">
-        {/* Export buttons */}
+        {/* ✅ Export directly from backend */}
         <button
-          onClick={() => exportCSV("workouts")}
+          onClick={() => downloadFile("/api/export/workouts.csv", "workouts.csv")}
           className="text-sm px-3 py-1 rounded bg-gray-100 hover:bg-gray-200 transition"
         >
           Export Workouts CSV
         </button>
         <button
-          onClick={() => exportCSV("nutrition")}
+          onClick={() => downloadFile("/api/export/nutrition.csv", "nutrition.csv")}
           className="text-sm px-3 py-1 rounded bg-gray-100 hover:bg-gray-200 transition"
         >
           Export Nutrition CSV
