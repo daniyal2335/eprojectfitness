@@ -18,6 +18,8 @@ import notificationRoutes from './routes/notifications.js';
 import forumRoutes from './routes/forumRoutes.js';
 import followRoutes from './routes/follows.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import settingRoutes from "./routes/settingRoute.js";  
+import feedbackRoutes from "./routes/feedbackRoutes.js"; 
 
 dotenv.config();
 
@@ -47,6 +49,8 @@ app.use('/api/export', exportRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/forum', forumRoutes);
 app.use("/api/forum", followRoutes);
+app.use("/api/settings", settingRoutes);   // ✅ new
+app.use("/api/feedback", feedbackRoutes); 
 
 app.use(errorHandler);
 

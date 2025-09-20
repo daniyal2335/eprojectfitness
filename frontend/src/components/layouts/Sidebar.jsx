@@ -53,7 +53,7 @@ export default function Sidebar() {
             >
               Workouts
             </Link>
-            
+
             {/* <Link
               to="/nutrition"
               className="block px-4 py-2 rounded hover:bg-gray-800"
@@ -82,7 +82,7 @@ export default function Sidebar() {
             >
               Progress
             </Link> */}
-             <Link
+            <Link
               to="/progress-dashboard"
               className="block px-4 py-2 rounded hover:bg-gray-800"
               onClick={() => setOpen(false)}
@@ -96,13 +96,19 @@ export default function Sidebar() {
             >
               Edit Profile
             </Link>
-            {/* <Link
-              to="/support"
+            <Link
+              to="/settings"
               className="block px-4 py-2 rounded hover:bg-gray-800"
-              onClick={() => setOpen(false)}
             >
-              Support
-            </Link> */}
+              Settings
+            </Link>
+            <Link
+              to="/feedback"
+              className="block px-4 py-2 rounded hover:bg-gray-800"
+            >
+              Feedback
+            </Link>
+
           </nav>
         </div>
 

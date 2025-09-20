@@ -15,77 +15,75 @@ export default function Navbar({ user }) {
   };
 
   return (
-    <header className="bg-white rounded-2xl shadow p-4 flex items-center justify-between">
-      <div>
-        <h2 className="text-xl font-bold">
-          Welcome, {user?.name || user?.username || "Guest"} 👋
-        </h2>
-        <p className="text-gray-500">Your personalized fitness dashboard</p>
+  <header className="bg-white dark:bg-gray-900 rounded-2xl shadow p-4 flex items-center justify-between">
+  <div>
+    <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">
+      Welcome, {user?.name || user?.username || "Guest"} 👋
+    </h2>
+    <p className="text-gray-500 dark:text-gray-400">Your personalized fitness dashboard</p>
+  </div>
+
+  <div className="flex items-center gap-4">
+    <button
+      onClick={() => downloadFile("/api/export/workouts.csv", "workouts.csv")}
+      className="text-sm px-3 py-1 rounded bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition"
+    >
+      Export Workouts CSV
+    </button>
+    <button
+      onClick={() => downloadFile("/api/export/nutrition.csv", "nutrition.csv")}
+      className="text-sm px-3 py-1 rounded bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition"
+    >
+      Export Nutrition CSV
+    </button>
+
+    <Link
+      to="/forum"
+      className="text-sm px-3 py-1 rounded bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition"
+    >
+      Forum
+    </Link>
+    <Link
+      to="/create-post"
+      className="text-sm px-3 py-1 rounded bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition"
+    >
+      New Post
+    </Link>
+
+    <NotificationBell userId={user?._id} />
+
+    {/* Profile menu */}
+    <div className="relative group">
+      <div className="flex items-center gap-2 cursor-pointer">
+        <ProfileImage
+          base64={user?.profileImage || ""}
+          alt="User Avatar"
+          className="h-10 w-10 rounded-full border object-cover"
+        />
+        <span className="hidden sm:block font-medium text-gray-700 dark:text-gray-200">
+          {user?.name || user?.username || "User"}
+        </span>
       </div>
 
-      <div className="flex items-center gap-4">
-        {/* ✅ Export directly from backend */}
-        <button
-          onClick={() => downloadFile("/api/export/workouts.csv", "workouts.csv")}
-          className="text-sm px-3 py-1 rounded bg-gray-100 hover:bg-gray-200 transition"
-        >
-          Export Workouts CSV
-        </button>
-        <button
-          onClick={() => downloadFile("/api/export/nutrition.csv", "nutrition.csv")}
-          className="text-sm px-3 py-1 rounded bg-gray-100 hover:bg-gray-200 transition"
-        >
-          Export Nutrition CSV
-        </button>
-
-        {/* Forum links */}
+      <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 shadow-lg rounded-lg border opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
         <Link
-          to="/forum"
-          className="text-sm px-3 py-1 rounded bg-gray-100 hover:bg-gray-200 transition"
+          to="/profile"
+          className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t-lg"
         >
-          Forum
+          <User size={16} className="text-gray-500 dark:text-gray-400" />
+          Edit Profile
         </Link>
-        <Link
-          to="/create-post"
-          className="text-sm px-3 py-1 rounded bg-gray-100 hover:bg-gray-200 transition"
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-b-lg"
         >
-          New Post
-        </Link>
-
-        {/* Notifications */}
-        <NotificationBell userId={user?._id} />
-
-        {/* Profile menu */}
-        <div className="relative group">
-          <div className="flex items-center gap-2 cursor-pointer">
-            <ProfileImage
-              base64={user?.profileImage || ""}
-              alt="User Avatar"
-              className="h-10 w-10 rounded-full border object-cover"
-            />
-            <span className="hidden sm:block font-medium text-gray-700">
-              {user?.name || user?.username || "User"}
-            </span>
-          </div>
-
-          <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-lg border opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-            <Link
-              to="/profile"
-              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-t-lg"
-            >
-              <User size={16} className="text-gray-500" />
-              Edit Profile
-            </Link>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 rounded-b-lg"
-            >
-              <LogOut size={16} className="text-red-500" />
-              Logout
-            </button>
-          </div>
-        </div>
+          <LogOut size={16} className="text-red-500" />
+          Logout
+        </button>
       </div>
-    </header>
+    </div>
+  </div>
+</header>
+
   );
 }

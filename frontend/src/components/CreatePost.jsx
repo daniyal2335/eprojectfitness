@@ -59,7 +59,7 @@ const handleSubmit = async (e) => {
 
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-2xl shadow-lg">
+    <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-2xl shadow-lg mt-5">
       <input
         type="text"
         name="title"
